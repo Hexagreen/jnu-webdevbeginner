@@ -1,2 +1,44 @@
 <!DOCTYPE html>
-<title>Test Issue #1</title>
+<html>
+    <head>
+        <title>Message</title>
+    </head>
+    <body>
+        <script>
+            function f0() {
+                document.writeln("Sentence1");
+            }
+            function f1() {
+                document.writeln("Sentence2");
+            }
+            function f2() {
+                document.writeln("Sentence3");
+            }
+            function f3() {
+                document.writeln("Sentence4");
+            }
+            function f4() {
+                document.writeln("Sentence5");
+            }
+
+            const funcs = [f0, f1, f2, f3, f4]
+
+            function getMessage(name) {
+                return `Hello, ${name}...`;
+            }
+            const message = getMessage("Buddy");
+            document.write(message);
+
+            setTimeout(() => {
+                document.write("Hello, again!");
+            }, 3000);
+            
+            let i = 0;
+            setTimeout(() => {
+                setInterval(() => {
+                    return funcs[i++]();
+                }, 3000)
+            }, 3000)
+        </script>
+    </body>
+</html>
