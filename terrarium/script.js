@@ -15,35 +15,25 @@ dragElement(document.getElementById('plant13'));
 dragElement(document.getElementById('plant14'));
 
     function dragElement(terrariumElement) {
-        let pos1 = 0,
-        pos2 = 0,
-        pos3 = 0,
-        pos4 = 0;
-        terrariumElement.onpointerdown = pointerDrag;
+        let startOffX = 0, startOffY = 0,
+            currentX = 0, currentY = 0;
+        terrariumElement.ondragstart = pointerDrag;
         terrariumElement.ondblclick = elementDoubleClick;
 
         function pointerDrag(e) {
-            e.preventDefault();
             console.log(e);
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            document.onpointermove = elementDrag;
-            document.onpointerup = stopElementDrag;
-        }
-    
-        function elementDrag(e) {
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            console.log(pos1, pos2, pos3, pos4);
-            terrariumElement.style.top = terrariumElement.offsetTop - pos2 + 'px';
-            terrariumElement.style.left = terrariumElement.offsetLeft - pos1 + 'px';
+            currentX = e.target.offsetLeft;
+            currentY = e.target.offsetTop;
+            startOffX = e.offsetX;
+            startOffY = e.offsetY;
+            terrariumElement.ondragend = stopElementDrag;
         }
 
-        function stopElementDrag() {
-            document.onpointerup = null;
-            document.onpointermove = null;
+        function stopElementDrag(e) {
+            console.log(e);
+            console.log(e.offsetX - startOffX, e.offsetY - startOffY, currentX, currentY)
+            terrariumElement.style.top = currentY + e.offsetY - startOffY + 'px';
+            terrariumElement.style.left = currentX + e.offsetX - startOffX + 'px';
         }
         
         function elementDoubleClick(e) {
