@@ -1,0 +1,18 @@
+.highlight {
+    background-color: yellow;
+}
+  
+.error {
+    background-color: lightcoral;
+    border: red;
+}
+
+h1, p, div {
+    text-align: center;
+}
+
+#quote {
+    border-width: 2px;
+    border-style: solid;
+    border-color: blueviolet;
+}
