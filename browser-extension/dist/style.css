@@ -6,9 +6,9 @@ blockquote:before, blockquote:after,q:before, q:after{content:'';content:none}
 input,select,textarea,button{vertical-align:middle;font-size:100%}
 button{border:0 none;background-color:transparent;cursor:pointer}
 table{border-collapse:collapse;border-spacing:0}
-body{-webkit-text-size-adjust:none} /* 뷰포트 변환시 폰트크기 자동확대 방지. */
+body{text-size-adjust:none} /* 뷰포트 변환시 폰트크기 자동확대 방지. */
 input[type='text'],input[type='password'],input[type='submit'],input[type='search'],input[type='tel'],input[type='email'],html
-input[type='button'],input[type='reset']{-webkit-appearance:none;border-radius:0}
+input[type='button'],input[type='reset']{-webkit-appearance:none;appearance:none;border-radius:0}
 input[type='search']::-webkit-search-cancel-button{-webkit-appearance:none}
 body{background:#fff}
 body,th,td,input,select,textarea,button{font-size:14px;line-height:1.5;font-family:'MalgunGothic','맑은 고딕',sans-serif;color:#333} /* color값은 디자인가이드에 맞게사용 */
@@ -35,8 +35,6 @@ h1, h2{
 
 body {
     text-align: center;
-    align-content: center;
-    width: 350px;
     text-size-adjust: none;
 }
 
@@ -73,4 +71,8 @@ button {
     background-color: rgb(238, 238, 238);
     margin-top: 5px;
     margin-bottom: 7px;
+}
+
+html {
+    width: 350px;
 }
