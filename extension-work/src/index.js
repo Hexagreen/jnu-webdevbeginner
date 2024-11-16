@@ -28,7 +28,7 @@ class Weather {
         if (timepointIndex < 0) timepointIndex = 0;
 
         const target = forecast.dataseries[timepointIndex];
-        this.timepoint = (target.timepoint + initTime - (date.getTimezoneOffset() / 60)) % 24;
+        this.timepoint = target.timepoint + initTime - (date.getTimezoneOffset() / 60);
         this.cloudLevel = getCloudLevel();      //0: completly clear 1: little bit 2: cloudy 3: filled
         this.starLevel = getStarLevel();        //0: faint star 1: dark star 2: bright star 3: brightest star
         this.transparency = getTransparency();  //0: clear 1: thin 2: thick 3: blocked
@@ -235,6 +235,7 @@ function displayStarLevel(sLevel) {
         case 2: setGridElement(id, 'bright star', '밝은 별만', '어두운 별은 안 보여요'); break;
         case 3: setGridElement(id, 'bright star', '낮은 시계', '밝은 별만 보일 거예요'); break;
     }
+    if(dayNight.day) setGridElement(id, 'sun', '너무 밝음', '낮에는 별이 안 보여요')
     setGridElemLoaded(id);
 }
 
@@ -307,7 +308,11 @@ async function displayWeather() {
     divLoading.style.display = 'none';
     divResult.style.display = 'grid';
 
-    setSubtitle(`내일 ${weather.timepoint}시 기준\n기온 ${weather.temperature}℃`);
+    let dayOffset;
+    if(new Date().getHours() < 12 && dayNight.day) dayOffset = "오늘";
+    else dayOffset = "내일";
+
+    setSubtitle(`${dayOffset} ${weather.timepoint % 24}시 기준\n기온 ${weather.temperature}℃`);
     setTimeout(() => { displayCloudLevel(weather.cloudLevel) }, 100);
     setTimeout(() => { displayStarLevel(weather.starLevel) }, 200);
     setTimeout(() => { displayTransparency(weather.transparency) }, 300);
