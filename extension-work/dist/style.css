@@ -37,8 +37,11 @@ h1 {
     left: 0px;
 }
 
-#loader {
-    margin: 100px 0px 0px 185px;
+#loadStatus {
+    margin: 100px 0px 10px 179px;
+}
+
+#loadStatus.onLoading {
     width: 30px;
     height: 30px;
     border: 6px solid #b8b8b8;
@@ -52,6 +55,28 @@ h1 {
     100% {transform: rotate(360deg);}
 }
 
+#loadStatus.failed {
+    background-color: #5c5f6a;
+    width: 42px;
+    height: 42px;
+    animation: weaving 4s linear infinite;
+    clip-path: polygon(10% 0, 0 10%, 40% 50%, 0 90%, 10% 100%, 50% 60%, 90% 100%, 100% 90%, 60% 50%, 100% 10%, 90% 0, 50% 40%);
+}
+
+@keyframes weaving {
+    0% {transform: rotate(0deg);}
+    3% {transform: rotate(-8deg);}
+    6% {transform: rotate(8deg);}
+    9% {transform: rotate(-5deg);}
+    12% {transform: rotate(0deg);}
+    100% {transform: rotate(0deg);}
+}
+
+#loadInfo {
+    color: gray;
+    margin-bottom: 100px;
+}
+
 .result {
     display: grid;
     width: 400px;
@@ -61,10 +86,28 @@ h1 {
     gap: 20px;
 }
 
+.result div {
+    width: 100px;
+}
+
+.result img {
+    width: 80px;
+}
+
+.weatherStat {
+    font-weight: bolder;
+}
+
+.weatherDesc {
+    font-size: 0.8em;
+    color: #333;
+}
+
 @media (prefers-color-scheme: dark) {
     body{background: #1c2031; color: #f4dd60;}
     footer{color: #f4dd60}
-    #loader{border: 6px solid #5c5f6a; border-top: 6px solid #f4dd60;}
+    #loadStatus.onLoading{border: 6px solid #5c5f6a; border-top: 6px solid #f4dd60;}
+    .weatherDesc{color: #b8b8b8;}
 }
 
 #modeButton {
