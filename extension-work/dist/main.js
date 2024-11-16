@@ -1,0 +1,1 @@
+document.querySelector("#title"),document.querySelector("#subtitle"),document.querySelector(".loading"),document.querySelector(".result");
