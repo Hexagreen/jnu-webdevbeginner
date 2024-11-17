@@ -161,7 +161,8 @@ function isNeedRefresh() {
     if (localStorage.getItem('weather') === null) return true;
     const lastTime = localStorage.getItem('baseTime');
     const now = new Date();
-    const nowTime = '' + now.getUTCFullYear() + (now.getUTCMonth() + 1) + now.getUTCDate() + now.getUTCHours();
+    const nowTime = '' + ('' + now.getUTCFullYear()).padStart(4, '0') + (now.getUTCMonth() + 1 + '').padStart(2, '0')
+         + ('' + now.getUTCDate()).padStart(2, '0') + ('' + now.getUTCHours()).padStart(2, '0');
     if (lastTime === null || parseInt(nowTime) - parseInt(lastTime) > 6) {
         localStorage.setItem('baseTime', nowTime);
         return true;
@@ -324,6 +325,8 @@ async function displayWeather() {
 function toggleMode(e) {
     e.preventDefault();
     dayNight.day = !dayNight.day;
+    divLoading.style.display = 'block';
+    divResult.style.display = 'none';
     if (dayNight.day) {
         setTitle("Radiant Skies");
         setSubtitle("오늘 날씨가 좋을까요?");
