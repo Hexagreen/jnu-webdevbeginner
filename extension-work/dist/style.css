@@ -1,0 +1,317 @@
+body,
+div,
+dl,
+dt,
+dd,
+ul,
+ol,
+li,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+pre,
+code,
+form,
+fieldset,
+legend,
+textarea,
+p,
+blockquote,
+th,
+td,
+input,
+select,
+button {
+    margin: 0;
+    padding: 0
+}
+
+fieldset,
+img {
+    border: 0 none
+}
+
+dl,
+ul,
+ol,
+menu,
+li {
+    list-style: none
+}
+
+blockquote,
+q {
+    quotes: none
+}
+
+blockquote:before,
+blockquote:after,
+q:before,
+q:after {
+    content: '';
+    content: none
+}
+
+input,
+select,
+textarea,
+button {
+    vertical-align: middle;
+    font-size: 100%
+}
+
+button {
+    border: 0 none;
+    background-color: transparent;
+    cursor: pointer
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0
+}
+
+body {
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+}
+
+/* 뷰포트 변환시 폰트크기 자동확대 방지. */
+input[type='text'],
+input[type='password'],
+input[type='submit'],
+input[type='search'],
+input[type='tel'],
+input[type='email'],
+html input[type='button'],
+input[type='reset'] {
+    appearance: none;
+    border-radius: 0
+}
+
+input[type='search']::-webkit-search-cancel-button {
+    -webkit-appearance: none
+}
+
+body {
+    background: #fff
+}
+
+body,
+th,
+td,
+input,
+select,
+textarea,
+button {
+    font-size: 14px;
+    line-height: 1.5;
+    font-family: 'MalgunGothic', '맑은 고딕', sans-serif;
+    color: #333
+}
+
+/* color값은 디자인가이드에 맞게사용 */
+a {
+    color: #333;
+    text-decoration: none
+}
+
+a:active,
+a:hover {
+    text-decoration: none
+}
+
+address,
+caption,
+cite,
+code,
+dfn,
+em,
+var {
+    font-style: normal;
+    font-weight: normal
+}
+
+body {
+    height: 600px;
+}
+
+body,
+div {
+    width: 400px;
+    text-align: center;
+    align-content: center;
+}
+
+h1 {
+    font-style: italic;
+}
+
+#image {
+    height: 160px;
+}
+
+#mainImage {
+    position: absolute;
+    width: 400px;
+    top: -240px;
+    left: 0px;
+}
+
+#loadStatus {
+    margin: 100px 0px 10px 179px;
+}
+
+#loadStatus.onLoading {
+    width: 30px;
+    height: 30px;
+    border: 6px solid #b8b8b8;
+    border-top: 6px solid rgb(67, 67, 219);
+    border-radius: 50%;
+    animation: spin 2s cubic-bezier(0.5, 0.2, 0.5, 0.8) infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+#loadStatus.failed {
+    background-color: #5c5f6a;
+    width: 42px;
+    height: 42px;
+    animation: weaving 4s linear infinite;
+    clip-path: polygon(10% 0, 0 10%, 40% 50%, 0 90%, 10% 100%, 50% 60%, 90% 100%, 100% 90%, 60% 50%, 100% 10%, 90% 0, 50% 40%);
+}
+
+@keyframes weaving {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    3% {
+        transform: rotate(-8deg);
+    }
+
+    6% {
+        transform: rotate(8deg);
+    }
+
+    9% {
+        transform: rotate(-5deg);
+    }
+
+    12% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+#loadInfo {
+    color: gray;
+    margin-bottom: 100px;
+}
+
+.result {
+    display: grid;
+    width: 340px;
+    padding: 10px;
+    margin: 0px 0px 0px 20px;
+    grid-template-columns: 100px 100px 100px;
+    grid-template-rows: 140px 140px;
+    gap: 20px;
+    align-items: start;
+}
+
+.result div {
+    width: 100px;
+}
+
+.result img {
+    width: 80px;
+}
+
+.weatherStat {
+    font-weight: bolder;
+}
+
+.weatherDesc {
+    font-size: 0.8em;
+    color: #777;
+}
+
+.elemLoaded {
+    animation: pop 0.8s ease-out;
+}
+
+@keyframes pop {
+    0% {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    30% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+#modeButton {
+    position: absolute;
+    top: 560px;
+    left: 160px;
+    width: 80px;
+    height: 30px;
+    color: #1c2031;
+}
+
+/* @media (prefers-color-scheme: dark) {
+
+    body,
+    div {
+        background: #1c2031;
+        color: #f4dd60;
+    }
+
+    #loadStatus.onLoading {
+        border: 6px solid #5c5f6a;
+        border-top: 6px solid #f4dd60;
+    }
+
+    .weatherDesc {
+        color: #b8b8b8;
+    }
+
+    #modeButton {
+        color: #f4dd60;
+    }
+} */
+
+body.night,
+div.night {
+    background: #1c2031;
+    color: #f4dd60;
+}
+
+#loadStatus.onLoading.night {
+    border: 6px solid #5c5f6a;
+    border-top: 6px solid #f4dd60;
+}
+
+#modeButton.night {
+    color: #f4dd60;
+}
