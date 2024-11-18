@@ -1,0 +1,109 @@
+.highlight {
+    background-color: yellow;
+}
+  
+.error {
+    background-color: lightcoral;
+    border: red;
+}
+
+h1, p, div {
+    text-align: center;
+}
+
+#quote, #trans {
+    margin: 0px;
+}
+
+#trans {
+    color: gray;
+    font-style: italic;
+}
+
+#quoteBox {
+    padding: 0.8rem;
+    margin: 1rem;
+    border-width: 2px;
+    border-style: none;
+    border-color: blueviolet;
+}
+
+.modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background: rgba(0, 0, 0, .5);
+    transition: opacity 1s;
+    opacity: 0;
+}
+
+.modal.on {
+    opacity: 1;
+}
+
+.modal .popup {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 16px;
+    background: #ffffff;
+    border-radius: 10px;
+}
+
+#popupTitle {
+    margin-block-start: 0;
+}
+
+@keyframes shake {
+    0%, 100% {transform: translateX(0);}
+    30% {transform: translateX(-2px);}
+    70% {transform: translateX(2px);}
+}
+
+.shaking {
+    display: inline-block;
+    animation: shake 0.2s;
+}
+
+#rank {
+    background-color: #d0d6f7;
+    border-radius: 10px;
+    padding-bottom: 10px;
+    padding-top: 10px;
+    margin-top: 10px;
+}
+#grade1 {
+    margin-top: 0;
+    color: gold;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+}
+
+#grade2 {
+    color: silver;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+}
+
+#grade3 {
+    color: #CD7F32;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+}
+
+.grade {
+    margin-top: 0.8rem;
+    margin-bottom: 0rem;
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
+table {
+    text-align: center;
+    width: 100%;
+}
+
+tbody td:nth-child(1) {
+    width: 50px;
+}
