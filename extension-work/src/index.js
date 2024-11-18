@@ -17,17 +17,27 @@ class Coordinate {
 class Weather {
     constructor(forecast, targetTime = 24) {
         const date = new Date();
+        // 현재 시각.
         const nowLocalTime = date.getHours();
+        // 목표 로컬 시각까지 남은 시간.
         let hoursToTargetTime = targetTime - nowLocalTime;
+        // 음수 보정.
         if (hoursToTargetTime < 0) hoursToTargetTime += 24;
+        // 목표 로컬 시각일 때 표준 시각.
         const targetTimeInUTC = date.getUTCHours() + hoursToTargetTime;
+        // API의 갱신 시각. 그리니치 표준시.
         const initTime = parseInt(forecast.init) % 100;
+        // 목표 로컬 시각까지 갱신 표준 시각에서 남은 시간.
         let initTimeToTargetTimeInUTC = targetTimeInUTC - initTime;
+        // API는 갱신 시각의 날씨 정보는 없음(+3시간 부터 제공). 현재가 목표 시각이라면 목표 시각을 24시간 뒤로 지정.
         initTimeToTargetTimeInUTC = initTimeToTargetTimeInUTC === 0 ? 24 : initTimeToTargetTimeInUTC;
+        // API는 3시간 단위로 정보 제공. 목표 시각에 제일 가까운 인덱스 지정.
         let timepointIndex = Math.round(initTimeToTargetTimeInUTC / 3.0) - 1;
+        // 음수 보정.
         if (timepointIndex < 0) timepointIndex = 0;
 
         const target = forecast.dataseries[timepointIndex];
+        // 선택된 날씨 정보의 로컬 시간.
         this.timepoint = target.timepoint + initTime - (date.getTimezoneOffset() / 60);
         this.cloudLevel = getCloudLevel();      //0: completly clear 1: little bit 2: cloudy 3: filled
         this.starLevel = getStarLevel();        //0: faint star 1: dark star 2: bright star 3: brightest star
@@ -39,6 +49,7 @@ class Weather {
         this.windDirection = target.wind10m.direction;
         this.temperature = target.temp2m;       //celcius
 
+        // 이하 메서드는 API 반환 값을 표현용으로 구간 매핑. ^ 위의 주석이 표현용 매핑.
         function getCloudLevel() {
             switch (target.cloudcover) {
                 case 1: return 0;
@@ -133,30 +144,37 @@ class Weather {
     }
 }
 
+// 제목 설정.
 function setTitle(message) {
     hTitle.innerText = message;
 }
 
+// 부제목 설정. 기온이 여기에 표시됨.
 function setSubtitle(message) {
     hSubtitle.innerText = message;
 }
 
+// 배경 이미지 설정. 알터 메시지를 곁들인.
 function setBackImage(image, alt) {
     const img = document.querySelector("#mainImage");
     img.alt = alt;
     img.src = `images/${image}.png`;
 }
 
+// 로딩 디스크 아래 메시지 설정.
 function setLoadingMessage(message) {
     const info = divLoading.querySelector("#loadInfo");
     info.innerText = message;
 }
 
+// 로드 실패 시 호출. 디스크 -> 가위표로 변경.
 function setLoadStatFailed() {
     const stat = divLoading.querySelector("#loadStatus");
-    stat.classList.replace('onLoaing', 'failed');
+    stat.classList.replace('onLoading', 'failed');
 }
 
+// API 재요청 판단. 로컬에 정보가 없거나,
+// 저장해 둔 API의 갱신 시각과 현재 시각이 6시간 넘게 차이나면 갱신 필요 표시.
 function isNeedRefresh() {
     if (localStorage.getItem('weather') === null) return true;
     const lastTime = localStorage.getItem('baseTime');
@@ -202,6 +220,7 @@ async function getWeather(coord) {
     }
 }
 
+// 날씨 정보 표시용 블럭 반환. 이미지 명은 알터 정보로도 쓸 수 있게 해 두었음.
 function setGridElement(id, imgName, status, desc) {
     divResult.querySelector(id).innerHTML =
         `<img class='statIcon' src='./images/icons/${imgName}.png' alt='${imgName}'></img>
@@ -209,14 +228,19 @@ function setGridElement(id, imgName, status, desc) {
     <p class='weatherDesc'>${desc}</p>`;
 }
 
+// 날씨 정보가 로드 되면 로드 완료 클래스 추가.
+// 갱신 애니메이션용.
 function setGridElemLoaded(id) {
     divResult.querySelector(id).classList.add("elemLoaded");
 }
 
+// 모드 변환 시 호출.
+// 갱신 애니메이션이 매 갱신마다 작동하도록 초기화.
 function resetGridElemLoaded() {
     divResult.querySelectorAll(".elemLoaded").forEach((t) => t.classList.remove("elemLoaded"));
 }
 
+// 이하 메서드는 표현용 매핑을 이용하여 실제 표현 문구로 그리드 원소 설정.
 function displayCloudLevel(cLevel) {
     const id = "#resCloud";
     switch (cLevel) {
@@ -294,6 +318,8 @@ function displayHumidWind(humid, wSpeed, wDir) {
     setGridElemLoaded(id);
 }
 
+// 갱신 필요를 확인하고 응답을 로컬에 저장 혹은 불러오기.
+// 로딩 화면과 결과 화면 갱신.
 async function displayWeather() {
     if (isNeedRefresh()) {
         const coord = await getCoord();
@@ -322,6 +348,8 @@ async function displayWeather() {
     setTimeout(() => { displayHumidWind(weather.humidity, weather.windPower, weather.windDirection) }, 600);
 }
 
+// 밤 낮 모드 토글 버튼.
+// 전환 마다 문구를 갱신하고 이미지 전환과 색 설정용 클래스 지정.
 function toggleMode(e) {
     e.preventDefault();
     dayNight.day = !dayNight.day;
@@ -353,6 +381,7 @@ function toggleMode(e) {
     }
 }
 
+// 초기화면 설정. 기본 화면은 밤.
 function init() {
     divResult.style.display = 'none';
     setLoadingMessage('불러오는 중...');
@@ -370,4 +399,3 @@ function init() {
 }
 
 init();
-displayWeather();
