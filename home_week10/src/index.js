@@ -23,10 +23,11 @@ class Weather {
         let hoursToTargetTime = targetTime - nowLocalTime;
         // 음수 보정.
         if (hoursToTargetTime < 0) hoursToTargetTime += 24;
-        // 목표 로컬 시각일 때 표준 시각.
-        const targetTimeInUTC = date.getUTCHours() + hoursToTargetTime;
         // API의 갱신 시각. 그리니치 표준시.
         const initTime = parseInt(forecast.init) % 100;
+        const initDay = parseInt((parseInt(forecast.init) / 100) % 100);
+        // 목표 로컬 시각일 때 표준 시각.
+        const targetTimeInUTC = (date.getUTCDate() - initDay) * 24 + date.getUTCHours() + hoursToTargetTime;
         // 목표 로컬 시각까지 갱신 표준 시각에서 남은 시간.
         let initTimeToTargetTimeInUTC = targetTimeInUTC - initTime;
         // API는 갱신 시각의 날씨 정보는 없음(+3시간 부터 제공). 현재가 목표 시각이라면 목표 시각을 24시간 뒤로 지정.
