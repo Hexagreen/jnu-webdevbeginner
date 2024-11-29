@@ -13,7 +13,7 @@ window.onload = async () => {
     const ctx = canvas.getContext("2d");
     const heroImg = await loadTexture("assets/player.png");
     const enemyImg = await loadTexture("assets/enemyShip.png");
-    const pattern = ctx.createPattern(await loadTexture("assets/pattern.png"), "repeat");
+    const pattern = ctx.createPattern(await loadTexture("assets/starBackground.png"), "repeat");
 
     ctx.fillStyle = pattern;
 
