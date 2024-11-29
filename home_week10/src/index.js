@@ -191,7 +191,7 @@ function isNeedRefresh() {
 async function getCoord() {
     setLoadingMessage("위치 정보 파악 중...")
     try {
-        const response = await axios.get('http://ip-api.com/json/112.164.229.46');
+        const response = await axios.get('http://ip-api.com/json/');
         return new Coordinate(response.data.lat, response.data.lon);
     } catch (error) {
         setLoadStatFailed();
