@@ -173,6 +173,12 @@ function setLoadStatFailed() {
     stat.classList.replace('onLoading', 'failed');
 }
 
+// 로드 시작 시 호출. 가위표 -> 디스크로 변경.
+function setLoadStatOnLoading() {
+    const stat = divLoading.querySelector("#loadStatus");
+    stat.classList.replace('failed', 'onLoading');
+}
+
 // API 재요청 판단. 로컬에 정보가 없거나,
 // 저장해 둔 API의 갱신 시각과 현재 시각이 6시간 넘게 차이나면 갱신 필요 표시.
 function isNeedRefresh() {
@@ -359,6 +365,7 @@ function toggleMode(e) {
         setTitle("Radiant Skies");
         setSubtitle("오늘 날씨가 좋을까요?");
         setBackImage("DALLE day", "blue sky background");
+        setLoadStatOnLoading();
         document.body.classList.remove("night");
         [...document.getElementsByTagName("div")].forEach(d => d.classList.remove("night"));
         document.querySelectorAll(".weatherDesc").forEach(d => d.classList.remove("night"));
@@ -371,6 +378,7 @@ function toggleMode(e) {
         setTitle("Starry Night");
         setSubtitle("오늘의 밤하늘은 어떨까요?");
         setBackImage("DALLE star2", "starry night background");
+        setLoadStatOnLoading();
         document.body.classList.add("night");
         [...document.getElementsByTagName("div")].forEach(d => d.classList.add("night"));
         document.querySelectorAll(".weatherDesc").forEach(d => d.classList.add("night"));
@@ -388,6 +396,7 @@ function init() {
     setTitle("Starry Night");
     setSubtitle("오늘의 밤하늘은 어떨까요?");
     setBackImage("DALLE star2", "starry night background");
+    setLoadStatOnLoading();
     document.body.classList.add("night");
     [...document.getElementsByTagName("div")].forEach(d => d.classList.add("night"));
     document.querySelectorAll(".weatherDesc").forEach(d => d.classList.add("night"));
