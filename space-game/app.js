@@ -45,16 +45,20 @@ class EventEmitter {
 // 이벤트 이름으로 사용할 목록
 // 이 딕셔너리에 없는 값도 이벤트 이름으로 사용할 수는 있는데, 여기 등록해두면 꺼내쓰면 되니까 헷갈리지 않음.
 const Messages = {
-    KEY_EVENT_UP: "KEY_EVENT_UP",
-    KEY_EVENT_DOWN: "KEY_EVENT_DOWN",
-    KEY_EVENT_LEFT: "KEY_EVENT_LEFT",
-    KEY_EVENT_RIGHT: "KEY_EVENT_RIGHT",
+    KEYUP_EVENT_UP: "KEYUP_EVENT_UP",
+    KEYUP_EVENT_DOWN: "KEYUP_EVENT_DOWN",
+    KEYUP_EVENT_LEFT: "KEYUP_EVENT_LEFT",
+    KEYUP_EVENT_RIGHT: "KEYUP_EVENT_RIGHT",
+    KEYDOWN_EVENT_UP: "KEYDOWN_EVENT_UP",
+    KEYDOWN_EVENT_DOWN: "KEYDOWN_EVENT_DOWN",
+    KEYDOWN_EVENT_LEFT: "KEYDOWN_EVENT_LEFT",
+    KEYDOWN_EVENT_RIGHT: "KEYDOWN_EVENT_RIGHT",
     KEY_EVENT_SPACE: "KEY_EVENT_SPACE",
     KEY_EVENT_ENTER: "KEY_EVENT_ENTER",
     COLLISION_ENEMY_LASER: "COLLISION_ENEMY_LASER",
     COLLISION_ENEMY_HERO: "COLLISION_ENEMY_HERO",
     GAME_END_LOSS: "GAME_END_LOSS",
-    GAME_END_WIN: "GAME_END_WIN",
+    GAME_STAGE_END: "GAME_STAGE_END",
 };
 
 // 전역 변수.
@@ -62,11 +66,14 @@ const Messages = {
 // 이 변수를 이용해서 화면을 갱신하거나, 사망한 객체를 제외시키거나 할거임.
 // eventEmitter 변수는 위에서 정의한 이벤트 관리자임. 이 변수를 이용해서 이벤트 구독과 발생 통지
 // 같은 작업을 진행할거임.
-let heroImg, enemyImg, laserImg, explosionImg, lifeImg,
+let heroImg, enemyImg, laserImg, explosionImg, lifeImg, bossImg,
+    heroLeftRollImg, heroRightRollImg,
     canvas, ctx, gameLoopId,
     gameObjects = [],
     hero, buddy1, buddy2,
-    eventEmitter = new EventEmitter();
+    eventEmitter = new EventEmitter(),
+    stageIdx, points,
+    enemySpawnFunctions = [createEnemies, createEnemies2, createEnemies3, createEnemies4, createEnemies5];
 
 // 기본 게임 오브젝트의 형식을 정의하는 클래스
 class GameObject {
@@ -96,6 +103,8 @@ class GameObject {
     draw(ctx) {
         ctx.drawImage(this.img, this.x, this.y, this.width, this.height); // 캔버스에 이미지 그리기
     }
+
+    onHit() { }
 }
 
 // 플레이어 객체의 형식
@@ -109,7 +118,6 @@ class Hero extends GameObject {
         this.speed = { x: 0, y: 0 };            // 이동속도 정보. 실습 때 코드에서는 사용하는 곳이 없는 듯
         this.cooldown = 0;                      // 평타 간격의 쿨타임
         this.life = 3;                          // 생명력
-        this.points = 0;                        // 점수
     }
 
     // 사격 시에 호출하는 메서드
@@ -125,11 +133,11 @@ class Hero extends GameObject {
                 // 쿨이 0 이상이면 100 줄이고
                 if (this.cooldown > 0) {
                     this.cooldown -= 100;
-                // 아니면 타이머 삭제. 
+                    // 아니면 타이머 삭제. 
                 } else {
                     clearInterval(id);
                 }
-            }, 100); // 얘가 타이머 실행 간격임 (ms)
+            }, 300); // 얘가 타이머 실행 간격임 (ms)
         }
     }
 
@@ -139,7 +147,7 @@ class Hero extends GameObject {
     }
 
     // 라이프 깎일 때 호출되는 메서드
-    decrementLife() {
+    onHit() {
         // 1점 차감하고
         this.life--;
         // 0이 되어있으면 사망으로 처리
@@ -148,9 +156,19 @@ class Hero extends GameObject {
         }
     }
 
-    // 점수 올릴 때 호출되는 메서드
-    incrementPoints() {
-        this.points += 100;
+    // 사용되지 않던 speed 값을 사용하여 이동을 구현할 것임
+    setSpeed(axle, speedValue) {
+        this.speed[axle] = speedValue;
+    }
+
+    // draw 호출 마다 speed 값을 사용해서 좌표를 갱신하고, 이동 방향에 따라 기체를 롤링.
+    draw(ctx) {
+        this.x += this.speed.x;
+        this.y += this.speed.y;
+        if (this.speed.x < 0) this.img = heroLeftRollImg;
+        else if (this.speed.x > 0) this.img = heroRightRollImg;
+        else this.img = heroImg;
+        super.draw(ctx);
     }
 }
 
@@ -164,12 +182,11 @@ class Buddy extends GameObject {
         super(hero.x, hero.y);
         (this.width = 99 / 2), (this.height = 75 / 2);  // 원본 영웅보다 작게
         this.type = 'Buddy';                            // 타입은 Buddy
-        this.speed = { x: 0, y: 0 };                    // 마찬가지로 아직 안씀
         this.delta = d;                                 // 동료기를 그리는 위치를 결정할 때 쓰는 변수. -1이면 왼쪽 1번, 1이면 오른쪽 1번.
         this.img = hero.img;                            // 이미지는 영웅의 이미지를 같이 사용함
         // 동료기는 주기적으로 레이저를 쏴야하니 3000ms 타이머를 돌려서 레이저를 쏘는데, 좌표 설정이 조금 번잡함.
         // 자신의 좌표가 영웅의 좌표로 설정되어 있기 때문에, 좌표에 보정 처리를 한 후에 레이저를 생성
-        let id = setInterval(() => {
+        this.id = setInterval(() => {
             gameObjects.push(new Laser(this.x + this.buddyPosAdjust() + 21, this.y - 10)); // 레이저 생성
         }, 3000);
     }
@@ -177,9 +194,10 @@ class Buddy extends GameObject {
     // GameObject 클래스의 draw 함수를 오버라이드.
     // 위에 생성자 설명에 적은 대로 동료기 객체가 가진 좌표는 영웅의 좌표이기 때문에, 그려지는 위치를 조정할 필요가 있음.
     draw(ctx) {
-        // 함수 호출 할 때마다 좌표를 영웅의 현재 좌표로 갱신
+        // 함수 호출 할 때마다 좌표를 영웅의 현재 좌표로 갱신. 이미지도 받아옴
         this.x = hero.x;
         this.y = hero.y;
+        this.img = hero.img;
         // 캔버스에 이미지를 그리면서 위치를 보정함.
         ctx.drawImage(this.img, this.x + this.buddyPosAdjust(), this.y + this.height * 0.5, this.width, this.height);
     }
@@ -203,25 +221,56 @@ class Enemy extends GameObject {
         this.height = 50;
         this.type = "Enemy";
         // 적 캐릭터의 자동 이동 (Y축 방향)
-        let id = setInterval(() => {
+        this.id = setInterval(() => {
             if (this.y < canvas.height - this.height) {
                 this.y += 5;  // 아래로 이동
             } else {
-                console.log('Stopped at', this.y);
-                clearInterval(id); // 화면 끝에 도달하면 정지
+                this.dead = true;
             }
         }, 300);
     }
 
     // 파괴 시에 호출하는 메서드
-    onDead() {
+    onHit() {
         // 자신의 이미지를 폭발 이미지로 바꾸고
         this.img = explosionImg;
+        // 자신의 타입을 변경하여 폭발 효과가 적인 상태로 충돌함을 방지
+        this.type = "Effect"
         // 100ms 뒤에 작동하는 일회성 타이머
         setTimeout(() => {
             // 사망 처리
             this.dead = true;
         }, 100);
+    }
+}
+
+class Boss extends GameObject {
+    // 마찬가지로 자신의 좌표를 받고
+    constructor(x, y) {
+        // 상위로 넘김
+        super(x, y);
+        this.width = 91;
+        this.height = 91;
+        this.type = "Enemy";
+        this.life = 30;
+        // 보스는 5초마다 적 소환, 체력 5 회복
+        this.id = setInterval(() => {
+            if (this.life < 30) this.life += 5;
+            placeEnemies([[1,0,1,0,1]]);
+        }, 5000);
+    }
+
+    // 피격 시 체력 1깎음, 체력이 0이 되면 사망처리
+    onHit() {
+        this.life -= 1;
+        if (this.life === 0) {
+            this.img = explosionImg;
+            this.type = "Effect"
+            clearInterval(this.id);
+            setTimeout(() => {
+                this.dead = true;
+            }, 300);
+        }
     }
 }
 
@@ -244,18 +293,32 @@ class Laser extends GameObject {
             }
         }, 100)
     }
+
+    onHit() {
+        this.dead = true;
+    }
 }
 
 // 브라우저에서 사용되는 화살표와 스페이스 키를 비활성화하기 위한 메서드
 let onKeyDown = function (e) {
-    console.log(e.keyCode);
-    switch (e.keyCode) {
-        case 37: // 왼쪽 화살표
-        case 39: // 오른쪽 화살표
-        case 38: // 위쪽 화살표
-        case 40: // 아래쪽 화살표
-        case 32: // 스페이스바
-            // 상기의 5개 키의 기본 동작을 비활성화
+    switch (e.key) {
+        case "ArrowUp": // 왼쪽 화살표
+            e.preventDefault();
+            eventEmitter.emit(Messages.KEYDOWN_EVENT_UP);
+            break;
+        case "ArrowDown": // 오른쪽 화살표
+            e.preventDefault();
+            eventEmitter.emit(Messages.KEYDOWN_EVENT_DOWN);
+            break;
+        case "ArrowLeft": // 위쪽 화살표
+            e.preventDefault();
+            eventEmitter.emit(Messages.KEYDOWN_EVENT_LEFT);
+            break;
+        case "ArrowRight": // 아래쪽 화살표
+            e.preventDefault();
+            eventEmitter.emit(Messages.KEYDOWN_EVENT_RIGHT);
+            break;
+        case " ": // 스페이스바
             e.preventDefault();
             break;
         // 나머지는 통과
@@ -270,13 +333,13 @@ window.addEventListener('keydown', onKeyDown);
 window.addEventListener("keyup", (evt) => {
     // 이하의 emit 함수는 payload 가 없는 이벤트를 통지.
     if (evt.key === "ArrowUp") {
-        eventEmitter.emit(Messages.KEY_EVENT_UP);
+        eventEmitter.emit(Messages.KEYUP_EVENT_UP);
     } else if (evt.key === "ArrowDown") {
-        eventEmitter.emit(Messages.KEY_EVENT_DOWN);
+        eventEmitter.emit(Messages.KEYUP_EVENT_DOWN);
     } else if (evt.key === "ArrowLeft") {
-        eventEmitter.emit(Messages.KEY_EVENT_LEFT);
+        eventEmitter.emit(Messages.KEYUP_EVENT_LEFT);
     } else if (evt.key === "ArrowRight") {
-        eventEmitter.emit(Messages.KEY_EVENT_RIGHT);
+        eventEmitter.emit(Messages.KEYUP_EVENT_RIGHT);
     } else if (evt.key === " ") {
         eventEmitter.emit(Messages.KEY_EVENT_SPACE);
     } else if (evt.key === "Enter") {
@@ -300,24 +363,37 @@ function loadTexture(path) {
 }
 
 // 게임 초기화 메서드
-function initGame() {
+function initGame(enemyIdx) {
     // 게임 오브젝트 초기화
     gameObjects = [];
-    createEnemies();    // 적 생성
+    enemySpawnFunctions[enemyIdx]();    // 적 생성. 스테이지 번호에 맞춰 적 생성
     createHero();       // 영웅 생성
     createBuddy();      // 동료기 생성
+    if (enemyIdx == 0) points = 0;
     // 이벤트 등록: 화살표 키가 눌리는 이벤트에 영웅의 좌표를 변경하는 메서드를 등록
-    eventEmitter.on(Messages.KEY_EVENT_UP, () => {
-        hero.y -= 5;
+    eventEmitter.on(Messages.KEYDOWN_EVENT_UP, () => {
+        hero.setSpeed("y", -5);
     });
-    eventEmitter.on(Messages.KEY_EVENT_DOWN, () => {
-        hero.y += 5;
+    eventEmitter.on(Messages.KEYDOWN_EVENT_DOWN, () => {
+        hero.setSpeed("y", 5);
     });
-    eventEmitter.on(Messages.KEY_EVENT_LEFT, () => {
-        hero.x -= 5;
+    eventEmitter.on(Messages.KEYDOWN_EVENT_LEFT, () => {
+        hero.setSpeed("x", -5);
     });
-    eventEmitter.on(Messages.KEY_EVENT_RIGHT, () => {
-        hero.x += 5;
+    eventEmitter.on(Messages.KEYDOWN_EVENT_RIGHT, () => {
+        hero.setSpeed("x", 5);
+    });
+    eventEmitter.on(Messages.KEYUP_EVENT_UP, () => {
+        hero.setSpeed("y", 0);
+    });
+    eventEmitter.on(Messages.KEYUP_EVENT_DOWN, () => {
+        hero.setSpeed("y", 0);
+    });
+    eventEmitter.on(Messages.KEYUP_EVENT_LEFT, () => {
+        hero.setSpeed("x", 0);
+    });
+    eventEmitter.on(Messages.KEYUP_EVENT_RIGHT, () => {
+        hero.setSpeed("x", 0);
     });
     // 이벤트 등록: 스페이스 바가 눌리는 이벤트에 영웅이 레이저를 쏘는 메서드를 등록
     eventEmitter.on(Messages.KEY_EVENT_SPACE, () => {
@@ -328,48 +404,36 @@ function initGame() {
     // 이 코드에서 second는 실제로 적 객체가 들어오는데, 적의 사망처리를 하는 메서드에서 100ms의 타이머 후에 dead를 true로 바꾸고 있기 때문에
     // 게임 승리 이벤트를 발행하는 코드를 약간 늦춰서 실행할 필요가 있음.
     eventEmitter.on(Messages.COLLISION_ENEMY_LASER, (_, { first, second }) => {
-        first.dead = true;          // first의 사망 처리
-        second.onDead();            // second의 사망 처리
-        hero.incrementPoints();     // 점수 상승
-        // 150ms짜리 일회성 타이머 작동
-        setTimeout(() => {
-            // 모든 적이 사망했다면
-            if (isEnemiesDead()) {
-                // 게임 승리 이벤트 발행 (payload 없음)
-                eventEmitter.emit(Messages.GAME_END_WIN);
-            }
-        }, 150);
+        first.onHit();          // first의 사망 처리
+        second.onHit();            // second의 사망 처리
+        points += 100;     // 점수 상승
+        if (isEnemiesDead()) {
+            // 스테이지 완료 이벤트 발행 (payload 없음)
+            eventEmitter.emit(Messages.GAME_STAGE_END);
+        }
     });
     // 이벤트 등록: 적과 영웅이 충돌하는 이벤트에 딕셔너리 {enemy:??} 를 payload로 받는 메서드 등록
     eventEmitter.on(Messages.COLLISION_ENEMY_HERO, (_, { enemy }) => {
-        enemy.dead = true;          // 부딪힌 적을 사망처리 
-        hero.decrementLife();       // 영웅 라이프 감소
-        // 150ms 뒤에
-        setTimeout(() => {
-            // 영웅이 죽었으면
-            if (isHeroDead()) {
-                // 게임 패배 이벤트 발행 (payload 없음)
-                eventEmitter.emit(Messages.GAME_END_LOSS);
-                return; // 메서드 종료
-            }
-            // 적이 전부 죽었으면
-            if (isEnemiesDead()) {
-                // 게임 승리 이벤트 발행 (payload 없음)
-                eventEmitter.emit(Messages.GAME_END_WIN);
-            }
-        }, 150);
+        enemy.onHit();          // 부딪힌 적을 사망처리 
+        hero.onHit();       // 영웅 라이프 감소
+        if (isHeroDead()) {
+            // 게임 패배 이벤트 발행 (payload 없음)
+            eventEmitter.emit(Messages.GAME_END_LOSS);
+            return; // 메서드 종료
+        }
+        // 적이 전부 죽었으면
+        if (isEnemiesDead()) {
+            // 스테이지 완료 이벤트 발행 (payload 없음)
+            eventEmitter.emit(Messages.GAME_STAGE_END);
+        }
     });
-    // 이벤트 등록: 게임 승리 이벤트에 endGame 메서드를 실행하는 메서드 등록
-    eventEmitter.on(Messages.GAME_END_WIN, () => {
-        endGame(true);  // 참이면 승리
+    // 이벤트 등록: 스테이지 완료 이벤트
+    eventEmitter.on(Messages.GAME_STAGE_END, () => {
+        nextStage();
     });
     // 이벤트 등록: 게임 패배 이벤트에 endGame 메서드를 실행하는 메서드 등록
     eventEmitter.on(Messages.GAME_END_LOSS, () => {
         endGame(false); // 거짓이면 패배
-    });
-    // 이벤트 등록: 엔터키가 눌린 이벤트에 게임을 초기화 하는 메서드를 실행하는 메서드 등록
-    eventEmitter.on(Messages.KEY_EVENT_ENTER, () => {
-        resetGame();
     });
 }
 
@@ -381,34 +445,23 @@ window.onload = async () => {
     ctx = canvas.getContext("2d");                  // 2d 컨텍스트
     // 각 이미지 로드 시도
     heroImg = await loadTexture("assets/player.png");
+    heroLeftRollImg = await loadTexture("assets/playerLeft.png");
+    heroRightRollImg = await loadTexture("assets/playerRight.png");
     enemyImg = await loadTexture("assets/enemyShip.png");
     laserImg = await loadTexture("assets/laserRed.png");
     explosionImg = await loadTexture("assets/laserGreenShot.png");
     lifeImg = await loadTexture("assets/life.png");
+    bossImg = await loadTexture("assets/enemyUFO.png")
     // 배경 이미지를 로드하면서 바로 반복 패턴으로 변경
     pattern = ctx.createPattern(await loadTexture("assets/starBackground.png"), "repeat");
 
+    stageIdx = 0;
+    points = 0;
+
     // 위에서 본 게임 초기화 메서드
-    initGame();
+    initGame(stageIdx);
     // 게임 화면이 갱신되며 충돌 감지 같은 지속적인 작업을 처리하는 타이머 생성
-    gameLoopId = setInterval(() => {
-        // 화면 초기화
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.font = "30px Arial"; // 텍스트의 크기와 글꼴
-        ctx.fillStyle = "red"; // 텍스트 색상
-        ctx.textAlign = "right"; // 텍스트 정렬
-        ctx.fillText("show this on the screen", 0, 0); // 텍스트와 위치
-
-        // 게임 객체 그리기
-        drawGameObjects(ctx);
-        // 게임 객체 업데이트. 이 메서드 내에서 충돌 감지가 작동하고 있음.
-        updateGameObjects();
-        drawPoints();
-        drawLife();
-
-    }, 100); // 100ms마다 실행
+    gameLoopId = setInterval(standardGameloop, 100); // 100ms마다 실행
 };
 
 // 두 사각형 영역이 겹치는지(=충돌했는지) 검사하는 메서드
@@ -490,53 +543,6 @@ function createBuddy() {
     gameObjects.push(buddy2);
 }
 
-// 적 생성 메서드
-function createEnemies() {
-    // 한 줄에 5기
-    const MONSTER_TOTAL = 5;
-    // 총 길이
-    const MONSTER_WIDTH = MONSTER_TOTAL * 98;
-    // 캔버스 중앙 - 총 길이의 절반 = 시작 위치
-    const START_X = (canvas.width - MONSTER_WIDTH) / 2;
-    // 시작 위치 + 총 길이 = 종료 위치
-    const STOP_X = START_X + MONSTER_WIDTH;
-
-    // 시작 위치부터 종료 위치까지 적 이미지의 길이만큼 더해가며
-    for (let x = START_X; x < STOP_X; x += 98) {
-        // 수직으로 5번
-        for (let y = 0; y < 50 * 5; y += 50) {
-            // 적 생성, 이미지 등록, 배열에 담기
-            const enemy = new Enemy(x, y);
-            enemy.img = enemyImg;
-            gameObjects.push(enemy);
-        }
-    }
-}
-
-// 예전 실습에서 만들었던 역피라미드형 적 배치 메서드
-function createEnemies2() {
-    // 첫 줄에 5기
-    const MONSTER_TOTAL = 5;
-    const MONSTER_WIDTH = MONSTER_TOTAL * enemyImg.width;
-    let START_X = (canvas.width - MONSTER_WIDTH) / 2;
-    let STOP_X = START_X + MONSTER_WIDTH;
-
-    // 제일 위쪽 줄부터
-    for (let y = 0; y < enemyImg.height * 5; y += enemyImg.height) {
-        // 왼쪽부터 오른쪽까지
-        for (let x = START_X; x < STOP_X; x += enemyImg.width) {
-            // 적 생성, 이미지 등록, 배열에 담기
-            const enemy = new Enemy(x, y);
-            enemy.img = enemyImg;
-            gameObjects.push(enemy);
-        }
-        // 시작 위치와 종료 위치 줄이기 -> 절반씩 줄여서 피라미드 형식 구현
-        START_X += enemyImg.width * 0.5;
-        STOP_X -= enemyImg.width * 0.5;
-    }
-
-}
-
 // 라이프 표시 그리기
 function drawLife() {
     const START_POS = canvas.width;
@@ -550,7 +556,7 @@ function drawPoints() {
     ctx.font = "30px Arial";
     ctx.fillStyle = "red";
     ctx.textAlign = "left";
-    drawText("Points: " + hero.points, 10, canvas.height - 20);
+    drawText("Points: " + points, 10, canvas.height - 20);
 }
 
 // 텍스트 그리기
@@ -585,6 +591,11 @@ function endGame(win) {
     // 게임 작동용 타이머를 생성해서 이 변수에 넣었었음.
     // 게임이 종료되었으니 타이머 제거
     clearInterval(gameLoopId);
+    // 게임 재시작 용
+    eventEmitter.on(Messages.KEY_EVENT_ENTER, () => {
+        stageIdx = 0;
+        resetGame();
+    });
     // 게임 화면이 겹칠 수 있으니, 200ms 지연 후에 게임 종료 화면을 그림
     setTimeout(() => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -605,21 +616,140 @@ function endGame(win) {
     }, 200)
 }
 
+function nextStage() {
+    // 스테이지가 끝까지 도달했으면 게임 승리 이벤트 발행
+    if (enemySpawnFunctions.length <= ++stageIdx) {
+        endGame(true);
+    } else {    // 아니면 다음 스테이지 준비 화면
+        clearInterval(gameLoopId);
+        setTimeout(() => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            displayMessage(
+                "Stage Clear! Press [Enter] to start next stage",
+                "green"
+            );
+            eventEmitter.on(Messages.KEY_EVENT_ENTER, () => {
+                resetGame(stageIdx);
+            });
+        }, 200);
+    }
+}
+
 // 게임 리셋 메서드
-function resetGame() {
+function resetGame(enemyFunc = 0) {
     // 이미 작동중인 게임 작동용 타이머가 있으면
     if (gameLoopId) {
         clearInterval(gameLoopId); // 게임 루프 중지해서 중복 실행 방지
         eventEmitter.clear(); // 모든 이벤트 리스너 제거, 이전 게임 세션과 충돌 방지
-        initGame(); // 게임 초기화
-        gameLoopId = setInterval(() => { // 100ms 간격으로 새로운 게임 루프 시작
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            drawPoints();
-            drawLife();
-            updateGameObjects();
-            drawGameObjects(ctx);
-        }, 100);
+        gameObjects.filter((o) => o.type === "Buddy" || o.type == "Enemy").forEach((o) => clearInterval(o.id));
+        initGame(enemyFunc); // 게임 초기화
+        gameLoopId = setInterval(standardGameloop, 100);
     }
+}
+
+function standardGameloop() {
+    // 화면 초기화
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = pattern;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // 게임 객체 그리기
+    drawGameObjects(ctx);
+    // 게임 객체 업데이트. 이 메서드 내에서 충돌 감지가 작동하고 있음.
+    updateGameObjects();
+    drawPoints();
+    drawLife();
+
+    if (isEnemiesDead()) eventEmitter.emit(Messages.GAME_STAGE_END);
+}
+
+// 적 생성 메서드. 2차원 0 or 1 배열을 받아서 1인 자리에 적 배치, 적 수에 따라 크기 스케일링
+function placeEnemies(matrix) {
+    let longest = matrix.reduce((acc, cur) => {
+        return acc < cur.length ? cur.length : acc;
+    }, 0)
+    let scaler = 1;
+    if (longest > 10) {
+        scaler = 10 / longest;
+    }
+
+    let itemH = enemyImg.height * scaler;
+    let itemW = enemyImg.width * scaler;
+
+    // 제일 위쪽 줄부터
+    for (let y = 0; y < matrix.length; y++) {
+        const line = matrix[y];
+        const startX = (canvas.width - itemW * line.length) / 2
+        // 왼쪽부터 오른쪽까지
+        for (let x = 0; x < line.length; x++) {
+            if (line[x] === 1) {// 적 생성, 이미지 등록, 배열에 담기
+                const enemy = new Enemy(startX + x * itemW, y * itemH);
+                enemy.height = itemH;
+                enemy.width = itemW;
+                enemy.img = enemyImg;
+                gameObjects.push(enemy);
+            }
+        }
+    }
+}
+
+// 적 생성 메서드
+function createEnemies() {
+    const matrix = [
+        [1, 1, 1, 1, 1,],
+        [1, 1, 1, 1,],
+        [1, 1, 1,],
+        [1, 1,],
+        [1,],
+    ]
+    placeEnemies(matrix);
+}
+
+function createEnemies2() {
+    const matrix = [
+        [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 0, 1, 1, 0,],
+        [0, 1, 1, 0, 0, 0, 0, 1, 0,],
+        [0, 0, 1, 0, 0, 1, 1, 0, 0, 0,],
+        [0, 0, 0, 0, 0, 1, 0, 0, 0,],
+    ]
+    placeEnemies(matrix);
+}
+
+function createEnemies3() {
+    const matrix = [
+        [1, 1, 1, 1, 1,],
+        [1, 1, 1, 1, 1,],
+        [1, 1, 1, 1, 1,],
+        [1, 1, 1, 1, 1,],
+        [1, 1, 1, 1, 1,],
+    ]
+    placeEnemies(matrix);
+}
+
+function createEnemies4() {
+    const matrix = [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 0, 1, 1, 1, 1, 0, 1, 0],
+        [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+    ]
+    placeEnemies(matrix);
+}
+
+function createEnemies5() {
+    const matrix = [
+        [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+    ]
+    placeEnemies(matrix);
+
+    const boss = new Boss((canvas.width - bossImg.width) / 2, 0);
+    boss.img = bossImg;
+    gameObjects.push(boss);
 }
